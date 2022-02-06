@@ -1,76 +1,95 @@
-from fastapi import FastAPI
-import sqlite3
+from fastapi import FastAPI, HTTPException
 import datetime
+from typing import Optional
+import sqlite3
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 app = FastAPI()
 
-class AuthorsParams(BaseModel):
+class Author(BaseModel):
     id: int
     nickname: str
 
 @app.get("/authors")
 async def select_all():
-    connection = sqlite3.connect('/mnt/hgfs/OneDrive - Deutsche Telekom AG/Proyecto_tugr/BBDD/decidim_equipo1.db')
+    connection = sqlite3.connect('/home/tsi/equipo1/decidim_equipo1.db')
     cursor = connection.cursor()
 
     cursor.execute("SELECT * from authors")
     records = cursor.fetchall()
+    authors = []
+    columnNames = [column[0] for column in cursor.description]
 
-    cursor.close()
-    connection.commit()
-    return records
+    for record in records:
+        authors.append( dict( zip( columnNames , record ) ) )
+    json_compatible_item_data = jsonable_encoder(authors)
+        
+    return JSONResponse(content=json_compatible_item_data)
 
-@app.get("/authors/{param1}")
-async def select_with_condition(param1: int):
-    connection = sqlite3.connect('/mnt/hgfs/OneDrive - Deutsche Telekom AG/Proyecto_tugr/BBDD/decidim_equipo1.db')
+
+@app.get("/authors/{id}")
+async def select_with_condition(id: int):
+    connection = sqlite3.connect('/home/tsi/equipo1/decidim_equipo1.db')
     cursor = connection.cursor()
+    try:
+        cursor.execute("SELECT * FROM authors WHERE id=?", [str(id)])
+        records = cursor.fetchall()
+        cursor.close()
+        columnNames = [column[0] for column in cursor.description]
 
-    cursor.execute("SELECT * FROM authors WHERE id=?", (str(param1)))
-    records = cursor.fetchall()
+        for record in records:
+            json_compatible_item_data = jsonable_encoder(dict( zip( columnNames , record ) ) )
+            
+        return JSONResponse(content=json_compatible_item_data)
+    except Exception:
+        return HTTPException(status_code=404, detail="Item not found")
 
-    cursor.close()
-    connection.commit()
-    return records
-
-@app.delete("/authors/{param1}")
-async def delete_with_condition(param1: int):
-    connection = sqlite3.connect('/mnt/hgfs/OneDrive - Deutsche Telekom AG/Proyecto_tugr/BBDD/decidim_equipo1.db')
+@app.delete("/authors/{id}")
+async def delete_with_condition(id: int):
+    connection = sqlite3.connect('/home/tsi/equipo1/decidim_equipo1.db')
     cursor = connection.cursor()
-
-    cursor.execute("DELETE FROM authors WHERE id=?", (str(param1)))
-    records = cursor.fetchall()
-
-    cursor.close()
-    connection.commit()
-    return records
+    cursor.execute("SELECT * FROM authors WHERE id=?", [str(id)])
+    rs = cursor.fetchall()
+    
+    if len(rs) > 0:
+        cursor.execute("DELETE FROM authors WHERE id=?", [str(id)])
+        cursor.close()
+        connection.commit()
+        return {"message": "El Author ha sido eliminado correctamente."}
+    raise HTTPException(status_code=404, detail="Author no encontrado.")
 
 @app.post("/authors")
-async def insert(params: AuthorsParams):
-    connection = sqlite3.connect('/mnt/hgfs/OneDrive - Deutsche Telekom AG/Proyecto_tugr/BBDD/decidim_equipo1.db')
+async def insert(item: Author):
+    connection = sqlite3.connect('/home/tsi/equipo1/decidim_equipo1.db')
     cursor = connection.cursor()
 
-    new_record = (params.id, params.nickname)
-    cursor.execute("INSERT INTO authors(id, nickname) VALUES(?,?)", (new_record))
-    records = cursor.fetchall()
+    new_record = (item.id, item.nickname)
+    try:
+        cursor.execute("INSERT INTO authors(id, nickname) VALUES(?,?)", (new_record))
+        records = cursor.fetchall()
+        cursor.close()
+        connection.commit()
+        return {"message": "El usuario a sido creado correctamente"}
+    except:
+        return HTTPException(status_code=404, detail="El usuario ya existe, no puedes insertar un author con el mismo ID")
 
-    cursor.close()
-    connection.commit()
-    return records
 
-@app.put("/authors/{param1}")
-async def update(param1: int, params: AuthorsParams):
-    connection = sqlite3.connect('/mnt/hgfs/OneDrive - Deutsche Telekom AG/Proyecto_tugr/BBDD/decidim_equipo1.db')
-    cursor = connection.cursor()
+@app.put("/authors/{id_author}")
+async def update(id_author: int, item: Author):
+    try:
+        connection = sqlite3.connect('/home/tsi/equipo1/decidim_equipo1.db')
+        cursor = connection.cursor()
+        cursor.execute("UPDATE authors SET nickname = ? WHERE id = ?", (item.nickname, id_author))
+        cursor.close()
+        connection.commit()
+        json_compatible_item_data = jsonable_encoder(item)
+        return JSONResponse(content=json_compatible_item_data)
+    except:
+        return HTTPException(status_code=404, detail="Item not found")
 
-    cursor.execute("UPDATE authors SET nickname = ? WHERE id = ?", (params.nickname, param1))
-    records = cursor.fetchall()
-
-    cursor.close()
-    connection.commit()
-    return records
-
-class CommentsParams(BaseModel):
+class Comments(BaseModel):
     id: int
     id_authors: int
     body: str
@@ -82,67 +101,83 @@ class CommentsParams(BaseModel):
     reply_level: int
 
 @app.get("/comments")
-async def select_all():
-    connection = sqlite3.connect('/mnt/hgfs/OneDrive - Deutsche Telekom AG/Proyecto_tugr/BBDD/decidim_equipo1.db')
+async def select_all():  
+    connection = sqlite3.connect('/home/tsi/equipo1/decidim_equipo1.db')
     cursor = connection.cursor()
 
     cursor.execute("SELECT * from comments")
     records = cursor.fetchall()
+    comments = []
+    columnNames = [column[0] for column in cursor.description]
 
-    cursor.close()
-    connection.commit()
-    return records
+    for record in records:
+        comments.append( dict( zip( columnNames , record ) ) )
+    json_compatible_item_data = jsonable_encoder(comments)
+        
+    return JSONResponse(content=json_compatible_item_data)
+        
 
-@app.get("/comments/{param1}")
-async def select_with_condition(param1: int):
-    connection = sqlite3.connect('/mnt/hgfs/OneDrive - Deutsche Telekom AG/Proyecto_tugr/BBDD/decidim_equipo1.db')
+@app.get("/comments/{id}")
+async def select_with_condition(id: int):
+    connection = sqlite3.connect('/home/tsi/equipo1/decidim_equipo1.db')
     cursor = connection.cursor()
+    try:
+        cursor.execute("SELECT * FROM comments WHERE id=?", [str(id)])
+        records = cursor.fetchall()
+        cursor.close()
+        columnNames = [column[0] for column in cursor.description]
 
-    cursor.execute("SELECT * FROM comments WHERE id=?", (str(param1)))
-    records = cursor.fetchall()
+        for record in records:
+            json_compatible_item_data = jsonable_encoder(dict( zip( columnNames , record ) ) )
+            
+        return JSONResponse(content=json_compatible_item_data)
+    except Exception:
+        return HTTPException(status_code=404, detail="Item not found")
 
-    cursor.close()
-    connection.commit()
-    return records
-
-@app.delete("/comments/{param1}")
-async def delete_with_condition(param1: int):
-    connection = sqlite3.connect('/mnt/hgfs/OneDrive - Deutsche Telekom AG/Proyecto_tugr/BBDD/decidim_equipo1.db')
+@app.delete("/comments/{id}")
+async def delete_with_condition(id: int):
+    connection = sqlite3.connect('/home/tsi/equipo1/decidim_equipo1.db')
     cursor = connection.cursor()
+    cursor.execute("SELECT * FROM comments WHERE id=?", [str(id)])
+    rs = cursor.fetchall()
 
-    cursor.execute("DELETE FROM comments WHERE id=?", (str(param1)))
-    records = cursor.fetchall()
-
-    cursor.close()
-    connection.commit()
-    return records
+    if len(rs) > 0:
+        cursor.execute("DELETE FROM comments WHERE id=?", [str(id)])
+        cursor.close()
+        connection.commit()
+        return {"message": "El Comentario ha sido eliminado correctamente."}
+    raise HTTPException(status_code=404, detail="El Comentario no se ha encontrado.")
 
 @app.post("/comments")
-async def insert(params: CommentsParams):
-    connection = sqlite3.connect('/mnt/hgfs/OneDrive - Deutsche Telekom AG/Proyecto_tugr/BBDD/decidim_equipo1.db')
+async def insert(item: Comments):
+    connection = sqlite3.connect('/home/tsi/equipo1/decidim_equipo1.db')
     cursor = connection.cursor()
 
-    new_record = (params.id, params.id_authors, params.body, params.id_comments, params.created_at, params.down_votes, params.up_votes, params.reply_to, params.reply_level)
-    cursor.execute("INSERT INTO comments(id, id_authors, body, id_comments, created_at, down_votes, up_votes, reply_to, reply_level) VALUES(?,?,?,?,?,?,?,?,?)", (new_record))
-    records = cursor.fetchall()
+    new_comment = (item.id, item.id_authors, item.body, item.id_comments, item.created_at, item.down_votes, item.up_votes, item.reply_to, item.reply_level)
+    try:
+        cursor.execute("INSERT INTO comments(id, id_authors, body, id_comments, created_at, down_votes, up_votes, reply_to, reply_level) VALUES(?,?,?,?,?,?,?,?,?)", (new_comment))
+        records = cursor.fetchlast()
+        cursor.close()
+        connection.commit()
+        return {"message": "El Comentario se ha guardado correctamente."}
+    except:
+        return HTTPException(status_code=204, detail="Hubo algun problema, revise los datos.")
 
-    cursor.close()
-    connection.commit()
-    return records
-
-@app.put("/comments/{param1}")
-async def update(param1: int, params: CommentsParams):
-    connection = sqlite3.connect('/mnt/hgfs/OneDrive - Deutsche Telekom AG/Proyecto_tugr/BBDD/decidim_equipo1.db')
+@app.put("/comments/{id}")
+async def update(id: int, item: Comments):
+    connection = sqlite3.connect('/home/tsi/equipo1/decidim_equipo1.db')
     cursor = connection.cursor()
+    new_comment = (item.id, item.id_authors, item.body, item.id_comments, item.created_at, item.down_votes, item.up_votes, item.reply_to, item.reply_level)
+    try:
+        cursor.execute("UPDATE comments SET id_authors = ?, body = ?, id_comments = ?, created_at = ?, down_votes = ?, up_votes = ?, reply_to = ?, reply_level = ? WHERE id = ?", (new_comment, id))
+        cursor.close()
+        connection.commit()
+        json_compatible_item_data = jsonable_encoder(new_comment)
+        return JSONResponse(content=json_compatible_item_data)
+    except:
+        return HTTPException(status_code=404, detail="Comentario not found")
 
-    cursor.execute("UPDATE comments SET id_authors = ?, body = ?, id_comments = ?, created_at = ?, down_votes = ?, up_votes = ?, reply_to = ?, reply_level = ? WHERE id = ?", (params.id_authors, params.body, params.id_comments, params.created_at, params.down_votes, params.up_votes, params.reply_to, params.reply_level, param1))
-    records = cursor.fetchall()
-
-    cursor.close()
-    connection.commit()
-    return records
-
-class proposalParams(BaseModel):
+class Proposal(BaseModel):
     id: int
     title: str
     id_authors: int
@@ -153,61 +188,81 @@ class proposalParams(BaseModel):
 
 @app.get("/proposal")
 async def select_all():
-    connection = sqlite3.connect('/mnt/hgfs/OneDrive - Deutsche Telekom AG/Proyecto_tugr/BBDD/decidim_equipo1.db')
+    connection = sqlite3.connect('/home/tsi/equipo1/decidim_equipo1.db')
     cursor = connection.cursor()
 
     cursor.execute("SELECT * from proposal")
     records = cursor.fetchall()
+    authors = []
+    columnNames = [column[0] for column in cursor.description]
 
-    cursor.close()
-    connection.commit()
-    return records
+    for record in records:
+        authors.append( dict( zip( columnNames , record ) ) )
+    json_compatible_item_data = jsonable_encoder(authors)
+        
+    return JSONResponse(content=json_compatible_item_data)
 
-@app.get("/proposal/{param1}")
-async def select_with_condition(param1: int):
-    connection = sqlite3.connect('/mnt/hgfs/OneDrive - Deutsche Telekom AG/Proyecto_tugr/BBDD/decidim_equipo1.db')
+@app.get("/proposal/{id}")
+async def select_with_condition(id: int):
+    connection = sqlite3.connect('/home/tsi/equipo1/decidim_equipo1.db')
+    cursor = connection.cursor()
+    try:
+        cursor.execute("SELECT * FROM proposal WHERE id=?", [str(id)])
+        records = cursor.fetchall()
+        cursor.close()
+        columnNames = [column[0] for column in cursor.description]
+
+        for record in records:
+            json_compatible_item_data = jsonable_encoder(dict( zip( columnNames , record ) ) )
+            
+        return JSONResponse(content=json_compatible_item_data)
+    except Exception:
+        return HTTPException(status_code=404, detail="Item not found")
+
+@app.delete("/proposal/{id}")
+async def delete_with_condition(id: int):
+    connection = sqlite3.connect('/home/tsi/equipo1/decidim_equipo1.db')
     cursor = connection.cursor()
 
-    cursor.execute("SELECT * FROM proposal WHERE id=?", (str(param1)))
-    records = cursor.fetchall()
-
-    cursor.close()
-    connection.commit()
-    return records
-
-@app.delete("/proposal/{param1}")
-async def delete_with_condition(param1: int):
-    connection = sqlite3.connect('/mnt/hgfs/OneDrive - Deutsche Telekom AG/Proyecto_tugr/BBDD/decidim_equipo1.db')
-    cursor = connection.cursor()
-
-    cursor.execute("DELETE FROM proposal WHERE id=?", (str(param1)))
-    records = cursor.fetchall()
-
-    cursor.close()
-    connection.commit()
-    return records
+    cursor.execute("SELECT * FROM proposal WHERE id=?", [str(id)])
+    rs = cursor.fetchall()
+    
+    if len(rs) > 0:
+        cursor.execute("DELETE FROM proposal WHERE id=?", [str(id)])
+        cursor.close()
+        connection.commit()
+        return {"message": "La propuesta ha sido eliminada correctamente."}
+    raise HTTPException(status_code=404, detail="Propuesta no encontrada.")
 
 @app.post("/proposal")
-async def insert(params: proposalParams):
-    connection = sqlite3.connect('/mnt/hgfs/OneDrive - Deutsche Telekom AG/Proyecto_tugr/BBDD/decidim_equipo1.db')
+async def insert(item: Proposal):
+    connection = sqlite3.connect('/home/tsi/equipo1/decidim_equipo1.db')
     cursor = connection.cursor()
 
-    new_record = (params.id, params.title, params.id_authors, params.id_comments, params.n_endorsement, params.created_at, params.published_at)
-    cursor.execute("INSERT INTO comments(id, title, id_authors, id_comments, endorsement, created_at, published_at) VALUES(?,?,?,?,?,?,?)", (new_record))
-    records = cursor.fetchall()
+    new_proposal= (item.id, item.title, item.id_authors, item.id_comments, item.n_endorsement, item.created_at, item.published_at)
+    try:
+        cursor.execute("INSERT INTO comments(id, title, id_authors, id_comments, endorsement, created_at, published_at) VALUES(?,?,?,?,?,?,?)", (new_proposal))
+        records = cursor.fetchall()
+        cursor.close()
+        connection.commit()
+        return {"message": "La propuesta ha sido creada correctamente"}
+    except:
+        return HTTPException(status_code=404, detail="Ya exite una propuesta con esa ID, revisa los datos")
 
-    cursor.close()
-    connection.commit()
-    return records
-
-@app.put("/proposal/{param1}")
-async def update(param1: int, params: proposalParams):
-    connection = sqlite3.connect('/mnt/hgfs/OneDrive - Deutsche Telekom AG/Proyecto_tugr/BBDD/decidim_equipo1.db')
+@app.put("/proposal/{id}")
+async def update(id: int, item: Proposal):
+    connection = sqlite3.connect('/home/tsi/equipo1/decidim_equipo1.db')
     cursor = connection.cursor()
+    
+    new_proposal= (item.id, item.title, item.id_authors, item.id_comments, item.n_endorsement, item.created_at, item.published_at)
+    try:
+        cursor.execute("UPDATE proposal SET title = ?, id_authors = ?, id_comments = ?, endorsement = ?, created_at = ?, published_at = ? WHERE id = ?", (new_proposal, id))
+        cursor.close()
+        connection.commit()
+        json_compatible_item_data = jsonable_encoder(new_comment)
+        return JSONResponse(content=json_compatible_item_data)
+    except:
+        return HTTPException(status_code=404, detail="Propuesta not found")
 
-    cursor.execute("UPDATE proposal SET title = ?, id_authors = ?, id_comments = ?, endorsement = ?, created_at = ?, published_at = ? WHERE id = ?", (params.title, params.id_authors, params.id_comments, params.n_endorsement, params.created_at, params.published_at, param1))
-    records = cursor.fetchall()
 
-    cursor.close()
-    connection.commit()
-    return records
+
