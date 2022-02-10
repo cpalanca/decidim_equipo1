@@ -1,20 +1,18 @@
 package api.domain;
 
-import java.util.Date;
-
 public class Proposal {
 	int id;
     String title;
     int id_authors;
     String id_comments;
     int n_endorsement;
-    Date created_at;
-    Date published_at;
+    String created_at;
+    String published_at;
     
     public Proposal() {}
 
-	public Proposal(int id, String title, int id_authors, String id_comments, int n_endorsement, Date created_at,
-			Date published_at) {
+	public Proposal(int id, String title, int id_authors, String id_comments, int n_endorsement, String created_at,
+			String published_at) {
 		this.id = id;
 		this.title = title;
 		this.id_authors = id_authors;
@@ -64,19 +62,19 @@ public class Proposal {
 		this.n_endorsement = n_endorsement;
 	}
 
-	public Date getCreated_at() {
+	public String getCreated_at() {
 		return created_at;
 	}
 
-	public void setCreated_at(Date created_at) {
+	public void setCreated_at(String created_at) {
 		this.created_at = created_at;
 	}
 
-	public Date getPublished_at() {
+	public String getPublished_at() {
 		return published_at;
 	}
 
-	public void setPublished_at(Date published_at) {
+	public void setPublished_at(String published_at) {
 		this.published_at = published_at;
 	}
 
