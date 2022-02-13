@@ -38,7 +38,7 @@ public class CommentService {
 		
 		try {
             Statement miStatement = conn.createStatement();
-            String sql = "Select * from comments";
+            String sql = "Select * from comments order by created_at desc";
             ResultSet miResultSet = miStatement.executeQuery(sql);
             
             while(miResultSet.next()) {
@@ -57,7 +57,7 @@ public class CommentService {
             
             
         } catch (SQLException e) {
-            return Response.status(Status.BAD_REQUEST).entity(e.getStackTrace()).build();
+            return Response.status(Status.BAD_REQUEST).entity(false).build();
         }
 		
 		return Response.status(Status.OK).entity(comments).build();
@@ -88,7 +88,7 @@ public class CommentService {
 
             
         } catch (SQLException e) {
-            return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+            return Response.status(Status.BAD_REQUEST).entity(false).build();
         }
 
 		return Response.status(Status.OK).entity(obj).build();
@@ -98,17 +98,20 @@ public class CommentService {
 	@Path("{commentId}")
 	public Response deleteComment( @PathParam("commentId") int commentId) throws ClassNotFoundException {
 		Connection conn = Utils.connectDB();
+		int rs;
 		try {
             Statement miStatement = conn.createStatement();
             String sql = "Delete from comments where id="+commentId;
             System.out.println(sql);
-            miStatement.executeUpdate(sql);
+            rs=miStatement.executeUpdate(sql);
             miStatement.close();
             conn.close();
         } catch (Exception e) {
-        	return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+        	return Response.status(Status.BAD_REQUEST).entity(false).build();
         }
-		return Response.status(Status.OK).entity("Author eliminado").build();
+		if(rs==0)
+			return Response.status(Status.BAD_REQUEST).entity(false).build();
+		return Response.status(Status.OK).entity(true).build();
 	}
 	
 	@POST
@@ -131,9 +134,9 @@ public class CommentService {
 	    		ps.close();
 	    		conn.close();
 		    } catch (SQLException e) {
-		    	return Response.status(Status.BAD_REQUEST).entity("Compruebe los datos").build();
+		    	return Response.status(Status.BAD_REQUEST).entity(false).build();
 		    }
-	    return Response.status(Status.OK).entity("Commentario guardado correctamente").build();
+	    return Response.status(Status.OK).entity(true).build();
 		
 	}
 
@@ -159,9 +162,9 @@ public class CommentService {
 	    		ps.close();
 	    		conn.close();
 		    } catch (SQLException e) {
-		    	return Response.status(Status.BAD_REQUEST).entity("Compruebe los datos").build();
+		    	return Response.status(Status.BAD_REQUEST).entity(false).build();
 		    }
-	    return Response.status(Status.OK).entity("Comentario actualizado correctamente").build();
+	    return Response.status(Status.OK).entity(true).build();
 	}
 	
 	

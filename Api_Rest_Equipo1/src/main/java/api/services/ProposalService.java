@@ -37,7 +37,7 @@ public class ProposalService {
 		
 		try {
             Statement miStatement = conn.createStatement();
-            String sql = "Select * from proposal";
+            String sql = "Select * from proposal order by created_at desc";
             ResultSet miResultSet = miStatement.executeQuery(sql);
 
             while(miResultSet.next()) {
@@ -54,7 +54,7 @@ public class ProposalService {
             
             
         } catch (SQLException e) {
-            return Response.status(Status.BAD_REQUEST).entity(e.getStackTrace()).build();
+            return Response.status(Status.BAD_REQUEST).entity(false).build();
         }
 		
 		return Response.status(Status.OK).entity(proposals).build();
@@ -83,7 +83,7 @@ public class ProposalService {
 
             
         } catch (SQLException e) {
-            return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+            return Response.status(Status.BAD_REQUEST).entity(false).build();
         }
 
 		return Response.status(Status.OK).entity(obj).build();
@@ -102,11 +102,11 @@ public class ProposalService {
             miStatement.close();
             conn.close();
         } catch (Exception e) {
-        	return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+        	return Response.status(Status.BAD_REQUEST).entity(false).build();
         }
 		if(rs==0)
-			return Response.status(Status.OK).entity("La propuesta no existe").build();
-		return Response.status(Status.OK).entity("Proposal eliminada").build();
+			return Response.status(Status.OK).entity(false).build();
+		return Response.status(Status.OK).entity(true).build();
 	}
 	
 	@POST
@@ -127,9 +127,9 @@ public class ProposalService {
 	    		ps.close();
 	    		conn.close();
 		    } catch (SQLException e) {
-		    	return Response.status(Status.BAD_REQUEST).entity("Compruebe los datos").build();
+		    	return Response.status(Status.BAD_REQUEST).entity(false).build();
 		    }
-	    return Response.status(Status.OK).entity("Commentario guardado correctamente").build();
+	    return Response.status(Status.OK).entity(true).build();
 		
 	}
 	
@@ -155,9 +155,9 @@ public class ProposalService {
 	    		ps.close();
 	    		conn.close();
 		    } catch (SQLException e) {
-		    	return Response.status(Status.BAD_REQUEST).entity("Compruebe los datos").build();
+		    	return Response.status(Status.BAD_REQUEST).entity(false).build();
 		    }
-	    return Response.status(Status.OK).entity("Propuesta actualizada correctamente").build();
+	    return Response.status(Status.OK).entity(true).build();
 	}
 	
 	

@@ -3,7 +3,6 @@ package api.services;
 import java.util.ArrayList;
 import java.util.List;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.sql.ResultSet;
@@ -38,12 +37,12 @@ public class AuthorService {
 		
 		try {
             Statement miStatement = conn.createStatement();
-            String sql = "Select * from authors";
+            String sql = "Select * from authors order by id desc";
             ResultSet miResultSet = miStatement.executeQuery(sql);
             
             while(miResultSet.next()) {
             	Author obj = new Author();
-            	obj.setId(miResultSet.getInt("id"));
+            	obj.setId(miResultSet.getLong("id"));
             	obj.setNickname(miResultSet.getString("nickname"));
             	authors.add(obj);
             }
@@ -59,7 +58,7 @@ public class AuthorService {
 	
 	@GET
 	@Path("{authorId}")
-	public Response findAuthor( @PathParam("authorId") int authorId) throws ClassNotFoundException {
+	public Response findAuthor( @PathParam("authorId") long authorId) throws ClassNotFoundException {
 		Connection conn = Utils.connectDB();
 		Author obj = new Author();
 		try {
@@ -68,7 +67,7 @@ public class AuthorService {
             ResultSet miResultSet = miStatement.executeQuery(sql);
             
             while(miResultSet.next()) {
-            	obj.setId(miResultSet.getInt("id"));
+            	obj.setId(miResultSet.getLong("id"));
             	obj.setNickname(miResultSet.getString("nickname"));
             }
             
@@ -77,27 +76,28 @@ public class AuthorService {
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
-
-		//connect();
 		return Response.ok(obj).build();
 	}
 	
 	
 	@DELETE
 	@Path("{authorId}")
-	public Response deleteAuthor( @PathParam("authorId") int authorId) throws ClassNotFoundException {
+	public Response deleteAuthor( @PathParam("authorId") long authorId) throws ClassNotFoundException {
 		Connection conn = Utils.connectDB();
+		int rs;
 		try {
             Statement miStatement = conn.createStatement();
             String sql = "Delete from authors where id="+authorId;
             System.out.println(sql);
-            miStatement.executeUpdate(sql);
+            rs=miStatement.executeUpdate(sql);
             miStatement.close();
             conn.close();
         } catch (Exception e) {
-        	return Response.status(Status.BAD_REQUEST).entity("Author not found").build();
+        	return Response.status(Status.BAD_REQUEST).entity(false).build();
         }
-		return Response.status(Status.OK).entity("Author eliminado").build();
+		if(rs==0)
+			return Response.status(Status.BAD_REQUEST).entity(false).build();
+		return Response.status(Status.OK).entity(true).build();
 	}
 	
 	@POST
@@ -107,40 +107,37 @@ public class AuthorService {
 		    try {
 		    	String sql = "INSERT INTO authors (id, nickname) VALUES (?,?)";
 	    		PreparedStatement ps= conn.prepareStatement(sql);
-	    		ps.setInt(1, authorRequest.getId());
+	    		ps.setLong(1, authorRequest.getId());
 	    		ps.setString(2, authorRequest.getNickname());
 	    		ps.executeUpdate();
 	    		ps.close();
 	    		conn.close();
 		    } catch (SQLException e) {
-		    	return Response.status(Status.BAD_REQUEST).entity("Compruebe los datos").build();
+		    	return Response.status(Status.BAD_REQUEST).entity(false).build();
 		    }
-	    return Response.status(Status.OK).entity("Author guardado correctamente").build();
+		    return Response.status(Status.OK).entity(true).build();
 		
 	}
 
 
 	@PUT
 	@Path("{authorId}")
-	public Response editAuthor(@PathParam("authorId") int authorId, Author author) throws ClassNotFoundException {
-		Connection con = null;
-		Class.forName("org.sqlite.JDBC");
+	public Response editAuthor(@PathParam("authorId") long authorId, Author author) throws ClassNotFoundException {
+		Connection conn = Utils.connectDB();
 		int rs;
 		System.out.println(author.toString());
 		try {
-			con = DriverManager.getConnection("jdbc:sqlite:/home/tsi/decidim_equipo1.db");
-			Statement miStatement = con.createStatement();
+			Statement miStatement = conn.createStatement();
 			String sql = "UPDATE authors SET id ="+author.getId()+", nickname = '"+author.getNickname()+"' where id="+authorId;
 			System.out.println(sql);
 			rs=miStatement.executeUpdate(sql);
 			System.out.print(rs);
 			miStatement.close();
-            con.close();
+            conn.close();
 		}catch(SQLException e) {
-			return Response.status(Status.BAD_REQUEST).entity("Revisa los datos").build();
+			return Response.status(Status.BAD_REQUEST).entity(false).build();
 		}		
-		
-		return Response.status(Status.OK).entity("Actualizado correctamente").build();
+		return Response.status(Status.OK).entity(true).build();
 		
 	}
 	

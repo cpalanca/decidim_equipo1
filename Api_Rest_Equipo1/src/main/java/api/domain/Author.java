@@ -1,21 +1,21 @@
 package api.domain;
 
 public class Author {
-	int id;
+	long id;
 	String nickname;
 	
 	public Author() {
 	}
 	
-	public Author(int id, String nickname) {
+	public Author(long id, String nickname) {
 		this.id = id;
 		this.nickname = nickname;
 	}
 	
-	public int getId() {
+	public long getId() {
 		return id;
 	}
-	public void setId(int id) {
+	public void setId(long id) {
 		this.id = id;
 	}
 	public String getNickname() {

@@ -13,7 +13,7 @@ public class Utils {
 		Class.forName("org.sqlite.JDBC");
 		Connection conn = null;
 		try {
-			String url = "jdbc:sqlite:/home/tsi/decidim_equipo1.db";
+			String url = "jdbc:sqlite:/Users/carlos/Documents/BBDD/decidim_equipo1.db";
 			conn = DriverManager.getConnection(url);
 		} catch (SQLException e) {
 	    	return null;
